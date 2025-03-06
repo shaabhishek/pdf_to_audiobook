@@ -51,6 +51,7 @@ def test_main_success():
     mock_args.return_value.model = 'tts-1'
     mock_args.return_value.speed = 1.0
     mock_args.return_value.min_chunk_size = None
+    mock_args.return_value.ai_model = 'gemini'
 
     # Call main function
     with patch('sys.argv', test_args):
@@ -80,6 +81,7 @@ def test_main_failure():
     mock_args.return_value.model = 'tts-1'
     mock_args.return_value.speed = 1.0
     mock_args.return_value.min_chunk_size = None
+    mock_args.return_value.ai_model = 'gemini'
 
     # Call main function
     with patch('sys.argv', test_args):
@@ -125,6 +127,7 @@ def test_main_custom_options():
     mock_args.return_value.model = 'tts-1-hd'
     mock_args.return_value.speed = 1.5
     mock_args.return_value.min_chunk_size = 800
+    mock_args.return_value.ai_model = 'gemini'
 
     # Call main function
     with patch('sys.argv', test_args):
@@ -138,6 +141,7 @@ def test_main_custom_options():
       model='tts-1-hd',
       speed=1.5,
       min_chunk_size=800,
+      ai_model='gemini',
     )
 
 

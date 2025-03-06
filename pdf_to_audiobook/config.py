@@ -125,6 +125,8 @@ Please follow these steps to extract and format the content:
 5. Add [pause] marker where there should be a pause in the audio, especially between major sections.
 
 Remember to focus on creating a coherent, engaging narrative that captures the essence of the research paper in a format suitable for audio presentation.
+
+Aim for a total length of 10000-20000 characters.
 """  # noqa: E501
 
 # Logging configuration
