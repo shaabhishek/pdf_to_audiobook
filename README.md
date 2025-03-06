@@ -52,17 +52,18 @@ DEFAULT_SPEED=1.0              # Speed multiplier (0.25 to 4.0)
 python -m pdf_to_audiobook.main path/to/research_paper.pdf
 ```
 
-By default, the output MP3 file will be saved to the same directory as the input PDF file, with the same name but .mp3 extension. For example, if you convert `/path/to/research_paper.pdf`, the output will be saved as `/path/to/research_paper.mp3`.
+By default, the output MP3 file will be saved to the same directory as the input PDF file, with the same name but with the AI model name appended and a .mp3 extension. For example, if you convert `/path/to/research_paper.pdf` using the Gemini AI model, the output will be saved as `/path/to/research_paper_gemini.mp3`.
 
 Options:
 - `--output`, `-o`: Custom path to save the output MP3 file (optional)
 - `--voice`, `-v`: Voice to use for the audiobook (default: alloy)
 - `--model`, `-m`: TTS model to use (default: tts-1)
 - `--speed`, `-s`: Speech speed multiplier (default: 1.0)
+- `--ai-model`: AI model to use for PDF processing ('gemini' or 'openai', default: gemini)
 
 Example:
 ```
-python -m pdf_to_audiobook.main research_paper.pdf --voice nova --model tts-1-hd --speed 1.2
+python -m pdf_to_audiobook.main research_paper.pdf --voice nova --model tts-1-hd --speed 1.2 --ai-model openai
 ```
 
 ### Python API
@@ -72,10 +73,11 @@ from pdf_to_audiobook.main import convert_pdf_to_audiobook
 
 success = convert_pdf_to_audiobook(
     pdf_path='research_paper.pdf',
-    output_path=None,  # None uses the same path/name as PDF but with .mp3 extension
+    output_path=None,  # None uses the same path/name as PDF but with AI model name and .mp3 extension
     voice='nova',      # OpenAI voice
     model='tts-1-hd',  # OpenAI TTS model
-    speed=1.2          # Speed multiplier
+    speed=1.2,         # Speed multiplier
+    ai_model='openai'  # AI model used for PDF processing (default: 'openai')
 )
 
 if success:
