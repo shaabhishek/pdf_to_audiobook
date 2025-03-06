@@ -40,14 +40,16 @@ def cleanup():
 atexit.register(cleanup)
 
 
-def get_default_output_path(pdf_path: str) -> str:
+def get_default_output_path(pdf_path: str, ai_model: str = DEFAULT_PDF_AI_MODEL) -> str:
   """Generate the default output path based on the input PDF path.
 
   Args:
       pdf_path: Path to the PDF file.
+      ai_model: AI model used for PDF processing ('gemini' or 'openai').
 
   Returns:
-      The default output path with .mp3 extension in the same directory.
+      The default output path with .mp3 extension in the same directory,
+      including the model name in the filename.
   """
   # Get the absolute path to handle relative paths properly
   abs_path = os.path.abspath(pdf_path)
@@ -55,8 +57,12 @@ def get_default_output_path(pdf_path: str) -> str:
   # Use pathlib to easily manipulate the path
   pdf_file = pathlib.Path(abs_path)
 
-  # Create a new path with the same name but .mp3 extension
-  output_path = pdf_file.with_suffix('.mp3')
+  # Get the stem (filename without extension) and add model name
+  stem = pdf_file.stem
+  new_stem = f'{stem}_{ai_model}'
+
+  # Create a new path with the modified stem and .mp3 extension
+  output_path = pdf_file.with_name(f'{new_stem}.mp3')
 
   return str(output_path)
 
@@ -87,7 +93,7 @@ def convert_pdf_to_audiobook(
   """
   # If no output path is provided, use the same path as the PDF but with .mp3 extension
   if output_path is None:
-    output_path = get_default_output_path(pdf_path)
+    output_path = get_default_output_path(pdf_path, ai_model)
 
   # Extract text from PDF
   logger.info(f'Starting conversion of {pdf_path} to audiobook')
@@ -176,7 +182,7 @@ def main() -> int:
 
   # Get args
   pdf_path = args.pdf_path
-  output_path = args.output or get_default_output_path(pdf_path)
+  output_path = args.output or get_default_output_path(pdf_path, args.ai_model)
   voice = args.voice
   model = args.model
   speed = args.speed
@@ -196,7 +202,7 @@ def main() -> int:
 
   if success:
     # If output was None, get the default path that was used
-    output_path = args.output or get_default_output_path(pdf_path)
+    output_path = args.output or get_default_output_path(pdf_path, ai_model)
     file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print(f'✅ Successfully converted {pdf_path} to audiobook:')
     print(f'📁 Output file: {os.path.abspath(output_path)} ({file_size_mb:.2f} MB)')

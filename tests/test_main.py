@@ -256,8 +256,13 @@ def test_convert_pdf_to_audiobook_custom_model_and_speed(
 def test_get_default_output_path():
   """Test the get_default_output_path function."""
   pdf_path = 'test.pdf'
-  expected_output = os.path.abspath('test.mp3')
 
-  result = main.get_default_output_path(pdf_path)
+  # Test with default AI model
+  expected_output_default = os.path.abspath('test_gemini.mp3')
+  result_default = main.get_default_output_path(pdf_path)
+  assert result_default == expected_output_default
 
-  assert result == expected_output
+  # Test with specified AI model
+  expected_output_openai = os.path.abspath('test_openai.mp3')
+  result_openai = main.get_default_output_path(pdf_path, ai_model='openai')
+  assert result_openai == expected_output_openai
