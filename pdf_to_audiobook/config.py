@@ -63,30 +63,29 @@ Please follow these steps to extract and format the content:
 1. Read through the entire paper carefully.
 
 2. Extract and structure the content as follows:
-
-   a. Title and Authors: Present the paper's title and list of authors.
+   a. Title and Authors: Present the paper's title and list of authors but not their affiliations.
    b. Abstract: Include the full abstract.
    c. Main Sections: Extract the key content from the introduction, methodology, results, and conclusion. Omit any references, citations, and footnotes.
    d. Mathematical Formulas: Convert equations and formulas into spoken language when possible. For complex formulas that cannot be easily verbalized, provide a brief description of their purpose or significance.
    e. Figures and Tables: Briefly describe important visual elements, focusing on their key insights and relevance to the overall research.
 
 3. Format the text for natural, engaging audio narration:
-   - Use clear transitions between sections.
-   - Break down long, complex sentences into more digestible parts.
-   - Spell out acronyms and abbreviations on first use.
-   - Assume the reader is a scientist or engineer with a strong background in the subject matter.
-   - Use the active voice, assuming that you are narrating YOUR OWN paper to the reader.
+   a. Use clear transitions between sections.
+   b. Break down long, complex sentences into more digestible parts.
+   c. Spell out acronyms and abbreviations on first use.
+   d. Assume the reader is a scientist or engineer with a strong background in the subject matter.
+   e. Use the active voice, assuming that you are narrating YOUR OWN paper to the reader.
 
 4. Maintain the academic tone while optimizing for listening comprehension:
-   - Use clear, concise language.
-   - Emphasize key findings and their implications.
-   - Provide context for technical terms or concepts when necessary.
+   a. Use clear, concise language.
+   b. Emphasize key findings and their implications.
+   c. Provide context for technical terms or concepts when necessary.
 
 5. Add [pause] marker where there should be a pause in the audio, especially between major sections.
 
 Remember to focus on creating a coherent, engaging narrative that captures the essence of the research paper in a format suitable for audio presentation.
 
-Aim for a total length of 10000-20000 characters.
+Aim for a total length of 15000-20000 characters.
 """  # noqa: E501
 
 # Gemini API prompt for PDF extraction
@@ -103,30 +102,29 @@ Please follow these steps to extract and format the content:
 1. Read through the entire paper carefully.
 
 2. Extract and structure the content as follows:
-
-   a. Title and Authors: Present the paper's title and list of authors.
+   a. Title and Authors: Present the paper's title and list of authors but not their affiliations.
    b. Abstract: Include the full abstract.
    c. Main Sections: Extract the key content from the introduction, methodology, results, and conclusion. Omit any references, citations, and footnotes.
    d. Mathematical Formulas: Convert equations and formulas into spoken language when possible. For complex formulas that cannot be easily verbalized, provide a brief description of their purpose or significance.
    e. Figures and Tables: Briefly describe important visual elements, focusing on their key insights and relevance to the overall research.
 
 3. Format the text for natural, engaging audio narration:
-   - Use clear transitions between sections.
-   - Break down long, complex sentences into more digestible parts.
-   - Spell out acronyms and abbreviations on first use.
-   - Assume the reader is a scientist or engineer with a strong background in the subject matter.
-   - Use the active voice, assuming that you are narrating YOUR OWN paper to the reader.
+   a. Use clear transitions between sections.
+   b. Break down long, complex sentences into more digestible parts.
+   c. Spell out acronyms and abbreviations on first use.
+   d. Assume the reader is a scientist or engineer with a strong background in the subject matter.
+   e. Use the active voice, assuming that you are narrating YOUR OWN paper to the reader.
 
 4. Maintain the academic tone while optimizing for listening comprehension:
-   - Use clear, concise language.
-   - Emphasize key findings and their implications.
-   - Provide context for technical terms or concepts when necessary.
+   a. Use clear, concise language.
+   b. Emphasize key findings and their implications.
+   c. Provide context for technical terms or concepts when necessary.
 
 5. Add [pause] marker where there should be a pause in the audio, especially between major sections.
 
 Remember to focus on creating a coherent, engaging narrative that captures the essence of the research paper in a format suitable for audio presentation.
 
-Aim for a total length of 10000-20000 characters.
+Aim for a total length of 15000-20000 characters.
 """  # noqa: E501
 
 # Logging configuration
