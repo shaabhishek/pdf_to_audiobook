@@ -90,7 +90,7 @@ else:
 
 - Python 3.10+
 - Google Gemini API key (for text extraction)
-- OpenAI API key (for TTS)
+- OpenAI API key (for TTS and text extraction ; sufficient for library to work)
 
 ## Development
 
