@@ -190,17 +190,18 @@ def test_synthesize_speech_with_custom_parameters(
   with patch(
     'openai.audio.speech.create', return_value=mock_openai_response
   ) as mock_create:
-    result = tts_client.synthesize_speech(
+    tts_client.synthesize_speech(
       sample_text, voice='nova', model='tts-1-hd', output_format='aac', speed=1.5
     )
-
   mock_create.assert_called_once()
-  # Verify custom parameters were passed
-  call_kwargs = mock_create.call_args.kwargs
-  assert call_kwargs['voice'] == 'nova'
-  assert call_kwargs['model'] == 'tts-1-hd'
-  assert call_kwargs['response_format'] == 'aac'
-  assert call_kwargs['speed'] == 1.5
+  expected_params = {
+    'voice': 'nova',
+    'model': 'tts-1-hd',
+    'response_format': 'aac',
+    'speed': 1.5,
+  }
+  for key, value in expected_params.items():
+    assert mock_create.call_args.kwargs[key] == value
 
 
 @pytest.mark.asyncio
