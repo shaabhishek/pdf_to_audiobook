@@ -1,121 +1,121 @@
 # PDF to Audiobook Converter
 
-A Python library that converts PDF research papers into audiobooks (MP3 format).
+A command-line tool that converts PDF research papers into audiobooks.
+
+## Overview
+
+The PDF to Audiobook Converter is designed to transform academic research papers and other PDFs into engaging audiobooks using text-to-speech (TTS) technology. It extracts text from PDFs, optionally applies custom titles, and produces both audio and text outputs.
 
 ## Features
 
-- Extract text from PDF research papers using Google's Gemini API
-- Convert extracted text to speech using OpenAI's TTS API
-- Save the result as an MP3 file in the same directory as the input PDF (by default)
-- Command-line interface for easy use
+- **PDF Text Extraction:** Extracts text from PDF files with support for custom titles.
+- **Multiple TTS Engines:** Supports both Kokoro TTS (default) and OpenAI TTS for audio synthesis.
+- **Audiobook Conversion:** Converts extracted text to audio using configurable TTS voices, models, and speed.
+- **Custom Output Directory:** Use the `--output-folder` option to specify a directory for saving both audio and text files.
+- **Centralized Logging:** Consistent logging across modules to aid in debugging and monitoring.
+- **Flexible Command-Line Interface:** Multiple options for configuring the conversion process.
+- **Comprehensive Testing:** Extensive tests ensure reliability across a broad range of use cases.
 
 ## Installation
 
-1. Clone this repository:
-   ```
-   git clone https://github.com/yourusername/pdf-to-audiobook.git
-   cd pdf-to-audiobook
-   ```
+This project uses `uv` for dependency management. Please ensure you have `uv` installed and follow these steps:
 
-2. Install the package:
-   ```
-   # Install uv if you don't have it
-   curl -LsSf https://astral.sh/uv/install.sh | sh
+1. Update dependencies in the `pyproject.toml` as needed.
+2. Run the following command to sync dependencies:
 
-   # Install the package and dependencies
-   uv sync
-   ```
-
-## Configuration
-
-Create a `.env` file in the root directory with the following variables:
-
-```
-# API Keys
-OPENAI_API_KEY=your_openai_api_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Gemini configuration (for PDF text extraction)
-GEMINI_MODEL=gemini-1.5-pro
-
-# OpenAI TTS configuration (for text-to-speech)
-TTS_MODEL=tts-1                # Options: tts-1, tts-1-hd
-DEFAULT_VOICE=alloy            # Options: alloy, echo, fable, onyx, nova, shimmer
-DEFAULT_SPEED=1.0              # Speed multiplier (0.25 to 4.0)
+```bash
+uv sync
 ```
 
 ## Usage
 
-### Command Line
+Run the converter via the command line:
 
-```
-python -m pdf_to_audiobook.main path/to/research_paper.pdf
-```
-
-By default, the output MP3 file will be saved to the same directory as the input PDF file, with the same name but with the AI model name appended and a .mp3 extension. For example, if you convert `/path/to/research_paper.pdf` using the Gemini AI model, the output will be saved as `/path/to/research_paper_gemini.mp3`.
-
-Options:
-- `--output`, `-o`: Custom path to save the output MP3 file (optional)
-- `--voice`, `-v`: Voice to use for the audiobook (default: alloy)
-- `--model`, `-m`: TTS model to use (default: tts-1)
-- `--speed`, `-s`: Speech speed multiplier (default: 1.0)
-- `--ai-model`: AI model to use for PDF processing ('gemini' or 'openai', default: gemini)
-
-Example:
-```
-python -m pdf_to_audiobook.main research_paper.pdf --voice nova --model tts-1-hd --speed 1.2 --ai-model openai
+```bash
+python -m pdf_to_audiobook.main [pdf_path] [options]
 ```
 
-### Python API
+### Command-Line Options
 
-```python
-from pdf_to_audiobook.main import convert_pdf_to_audiobook
+- `pdf_path`: Path to the PDF file.
+- `--output-folder, -o`: Specifies the folder where generated files (audio and text) will be saved. If not provided, files are saved in their default locations.
+- `--tts-mode`: TTS engine to use ('kokoro' or 'openai'). Default is `kokoro`.
+- `--voice`: TTS voice to use. For OpenAI: 'alloy', 'nova', etc. For Kokoro: 'af_sky', etc. Default depends on the TTS mode.
+- `--model`: TTS model to use (OpenAI only, e.g., 'tts-1', 'tts-1-hd'). Default is `tts-1`.
+- `--speed`: Speech speed. Default is `1.0` for OpenAI and `1.25` for Kokoro.
+- `--min-chunk-size`: Minimum chunk size for TTS processing.
+- `--ai-model`: AI model for PDF text extraction (e.g., 'gemini', 'openai'). Default is `gemini`.
+- `--title`: Custom title for the output files (this will be converted to snake_case).
 
-success = convert_pdf_to_audiobook(
-    pdf_path='research_paper.pdf',
-    output_path=None,  # None uses the same path/name as PDF but with AI model name and .mp3 extension
-    voice='nova',      # OpenAI voice
-    model='tts-1-hd',  # OpenAI TTS model
-    speed=1.2,         # Speed multiplier
-    ai_model='openai'  # AI model used for PDF processing (default: 'openai')
-)
+#### Example
 
-if success:
-    print('Conversion successful!')
-else:
-    print('Conversion failed.')
+To convert a PDF using Kokoro TTS:
+
+```bash
+python -m pdf_to_audiobook.main research_paper.pdf --output-folder output --title 'Custom Paper Title' --tts-mode kokoro --voice af_sky --speed 1.25
 ```
 
-## Requirements
+To convert a PDF using OpenAI TTS:
 
-- Python 3.10+
-- Google Gemini API key (for text extraction)
-- OpenAI API key (for TTS and text extraction ; sufficient for library to work)
-
-## Development
-
-### Package Management with uv
-
-This project uses [uv](https://github.com/astral-sh/uv) for Python package management. To add or modify dependencies:
-
-1. Edit the `pyproject.toml` file to add or update dependencies
-2. Run `uv sync` to install the updated dependencies
-3. Use `uv sync --all-extras` to install development dependencies as well
-
-### Running Tests
-
-To run the tests, install the development dependencies and use pytest:
-
-```
-# Install the package with development dependencies
-uv sync --all-extras
-
-# Run the tests
-uv run pytest
+```bash
+python -m pdf_to_audiobook.main research_paper.pdf --output-folder output --title 'Custom Paper Title' --tts-mode openai --voice nova --model tts-1 --speed 1.0
 ```
 
-The test suite includes unit tests for all components of the package.
+## TTS Engines
+
+### Kokoro TTS (Default)
+
+An offline Text-to-Speech system with high-quality voices:
+- Language support: American English (default), British English, Japanese, and Mandarin Chinese
+- Voice options: Various voices such as 'af_sky' (default)
+- Sample rate: 24000 Hz by default
+- Speed range: Adjustable (1.25 by default)
+
+### OpenAI TTS
+
+OpenAI's cloud-based Text-to-Speech system:
+- Voices: alloy, echo, fable, onyx, nova, shimmer
+- Models: tts-1, tts-1-hd
+- Speed range: 0.25 to 4.0
+- Output formats: mp3, opus, aac, flac
+
+## Environment Variables
+
+Configure the tool by setting environment variables in a `.env` file:
+
+```
+# TTS Mode (openai)
+TTS_MODE=openai
+
+# OpenAI TTS configuration
+OPENAI_API_KEY=your_openai_api_key
+TTS_MODEL=tts-1
+DEFAULT_VOICE=alloy
+DEFAULT_SPEED=1.0
+```
+
+## Testing
+
+Run the test suite using `pytest`:
+
+```bash
+python -m pytest -v
+```
+
+## Code Structure
+
+- **pdf_to_audiobook/**: Main package containing modules for PDF reading, TTS conversion, logging, and utility functions.
+- **tests/**: Contains unit tests using `pytest` to ensure the reliability of each module.
+
+## Contributing
+
+Contributions are welcome! Please adhere to the following guidelines:
+
+- **Formatting:** Use Ruff and Black for code formatting.
+- **Indentation:** 2 spaces as specified in the pyproject.toml.
+- **Max Line Length:** 88 characters.
+- **Naming Conventions:** snake_case for functions/variables, PascalCase for classes, and UPPER_CASE for constants.
 
 ## License
 
-MIT 
+[Specify License Information Here] 

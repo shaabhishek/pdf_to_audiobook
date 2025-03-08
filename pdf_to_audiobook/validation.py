@@ -3,6 +3,11 @@
 import argparse
 import os
 
+from pdf_to_audiobook.logging_config import configure_logging
+
+# Configure logging
+logger = configure_logging(__name__)
+
 
 def valid_pdf_file(pdf_path: str) -> str:
   """Validate that the given path points to a readable PDF file.

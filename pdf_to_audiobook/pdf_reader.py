@@ -5,13 +5,13 @@ specifically optimized for research papers.
 """
 
 import base64
-import logging
 import os
 import time
 from typing import Literal
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import openai
 from pypdf import PdfReader
 
@@ -19,37 +19,30 @@ from pdf_to_audiobook.config import DEFAULT_PDF_AI_MODEL
 from pdf_to_audiobook.config import GEMINI_API_KEY
 from pdf_to_audiobook.config import GEMINI_EXTRACTION_PROMPT
 from pdf_to_audiobook.config import GEMINI_MODEL
-from pdf_to_audiobook.config import LOG_LEVEL
 from pdf_to_audiobook.config import MAX_API_RETRIES
 from pdf_to_audiobook.config import MAX_PDF_PROCESSING_SIZE
 from pdf_to_audiobook.config import OPENAI_API_KEY
 from pdf_to_audiobook.config import OPENAI_EXTRACTION_PROMPT
 from pdf_to_audiobook.config import OPENAI_PDF_MODEL
+from pdf_to_audiobook.logging_config import configure_logging
 
 # Configure logging
-logging.basicConfig(
-  level=getattr(logging, LOG_LEVEL),
-  format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-)
-logger = logging.getLogger(__name__)
+logger = configure_logging(__name__)
 
-# Initialize Gemini API configuration
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Create a reusable Gemini model instance
-_gemini_model = None
+# Initialize Gemini API client
+_gemini_client = None
 
 
-def get_gemini_model():
-  """Get or create a singleton instance of the Gemini model.
+def get_gemini_client():
+  """Get or create a singleton instance of the Gemini client.
 
   Returns:
-      A GenerativeModel instance.
+      A Gemini client instance.
   """
-  global _gemini_model
-  if _gemini_model is None:
-    _gemini_model = genai.GenerativeModel(GEMINI_MODEL)
-  return _gemini_model
+  global _gemini_client
+  if _gemini_client is None:
+    _gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+  return _gemini_client
 
 
 def encode_pdf(file_path: str) -> Optional[str]:
@@ -208,19 +201,44 @@ def process_with_gemini_with_retry(
 
   for attempt in range(max_retries):
     try:
-      # Use the singleton model instance
-      model = get_gemini_model()
+      # Get the Gemini client
+      client = get_gemini_client()
 
       # Replace the placeholder in the prompt with the actual paper content
-      prompt = GEMINI_EXTRACTION_PROMPT.replace('{RESEARCH_PAPER_CONTENT}', text)
+      prompt_text = GEMINI_EXTRACTION_PROMPT.replace('{RESEARCH_PAPER_CONTENT}', text)
 
       logger.info(
-        f'Sending prompt to Gemini API (total prompt length: {len(prompt)} chars)'
+        f'Sending prompt to Gemini API (total prompt length: {len(prompt_text)} chars)'
+      )
+
+      # Prepare the content for the API call
+      contents = [
+        types.Content(
+          role='user',
+          parts=[
+            types.Part.from_text(text=prompt_text),
+          ],
+        ),
+      ]
+
+      # Configure the generation parameters
+      generate_content_config = types.GenerateContentConfig(
+        temperature=0.7,
+        top_p=0.95,
+        top_k=64,
+        max_output_tokens=65536,
+        response_mime_type='text/plain',
       )
 
       # Generate response
       logger.info('Waiting for Gemini API response...')
-      response = model.generate_content(prompt)
+
+      # Use the model from config
+      response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=contents,
+        config=generate_content_config,
+      )
 
       # Get and log the formatted text
       formatted_text = response.text
@@ -248,13 +266,17 @@ def process_with_gemini_with_retry(
       # Return the formatted text
       return formatted_text
     except Exception as e:
-      if attempt == max_retries - 1:
-        logger.error(f'Failed after {max_retries} attempts: {e}')
+      logger.error(
+        f'Error processing text with Gemini API (attempt {attempt + 1}): {e}'
+      )
+      if attempt < max_retries - 1:
+        # Exponential backoff with jitter
+        sleep_time = (2**attempt) + (0.1 * attempt)
+        logger.info(f'Retrying in {sleep_time:.2f} seconds...')
+        time.sleep(sleep_time)
+      else:
+        logger.error(f'Failed to process text after {max_retries} attempts')
         return None
-
-      wait_time = 2**attempt
-      logger.warning(f'Attempt {attempt + 1} failed, retrying in {wait_time}s: {e}')
-      time.sleep(wait_time)
 
 
 def process_with_gemini(text: str) -> Optional[str]:
@@ -267,6 +289,72 @@ def process_with_gemini(text: str) -> Optional[str]:
       Formatted text suitable for audiobook or None if processing failed.
   """
   return process_with_gemini_with_retry(text)
+
+
+def process_with_gemini_stream(text: str) -> Optional[str]:
+  """Process text using Gemini API with streaming response.
+
+  Args:
+      text: Raw text extracted from PDF.
+
+  Returns:
+      Formatted text suitable for audiobook or None if processing failed.
+  """
+  logger.info(f'Processing text with Gemini API streaming ({len(text)} chars)')
+
+  try:
+    # Get the Gemini client
+    client = get_gemini_client()
+
+    # Replace the placeholder in the prompt with the actual paper content
+    prompt_text = GEMINI_EXTRACTION_PROMPT.replace('{RESEARCH_PAPER_CONTENT}', text)
+
+    logger.info(
+      f'Sending prompt to Gemini API (total prompt length: {len(prompt_text)} chars)'
+    )
+
+    # Prepare the content for the API call
+    contents = [
+      types.Content(
+        role='user',
+        parts=[
+          types.Part.from_text(text=prompt_text),
+        ],
+      ),
+    ]
+
+    # Configure the generation parameters
+    generate_content_config = types.GenerateContentConfig(
+      temperature=0.7,
+      top_p=0.95,
+      top_k=64,
+      max_output_tokens=65536,
+      response_mime_type='text/plain',
+    )
+
+    # Generate streaming response
+    logger.info('Waiting for Gemini API streaming response...')
+
+    # For actual use, we'd collect the chunks, but for demonstration we'll just log them
+    full_response = ''
+    for chunk in client.models.generate_content_stream(
+      model=GEMINI_MODEL,
+      contents=contents,
+      config=generate_content_config,
+    ):
+      # In a real application, you might print or process each chunk as it arrives
+      # print(chunk.text, end="")
+      logger.debug(f'Received chunk: {chunk.text[:50]}...')
+      full_response += chunk.text
+
+    logger.info(
+      f'Received complete response from Gemini API ({len(full_response)} chars)'
+    )
+    return full_response
+
+  except Exception as e:
+    logger.error(f'Error processing text with Gemini API streaming: {e}')
+    return None
 
 
 def read_pdf(

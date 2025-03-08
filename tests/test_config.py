@@ -56,5 +56,5 @@ def test_config_defaults():
     # Check default values for other config variables
     assert config.TTS_MODEL == 'tts-1'
     assert config.DEFAULT_VOICE == 'alloy'
-    assert config.DEFAULT_SPEED == 1.0
+    assert config.DEFAULT_SPEED == 1.25
     assert config.LOG_LEVEL == 'INFO'

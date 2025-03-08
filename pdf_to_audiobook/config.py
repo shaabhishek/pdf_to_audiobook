@@ -26,16 +26,20 @@ DEFAULT_PDF_AI_MODEL = os.getenv('DEFAULT_PDF_AI_MODEL', 'gemini')
 
 # OpenAI TTS API configuration
 # No separate API key needed for OpenAI TTS - uses the same OPENAI_API_KEY
-# Default to tts-1 model
-TTS_MODEL = os.getenv('TTS_MODEL', 'tts-1')
+# Possible values: tts-1, tts-1-hd
+TTS_MODEL = os.getenv('TTS_MODEL')
 # OpenAI voices: alloy, echo, fable, onyx, nova, shimmer
-DEFAULT_VOICE = os.getenv('DEFAULT_VOICE', 'alloy')
+DEFAULT_VOICE = os.getenv('DEFAULT_VOICE')
 DEFAULT_OUTPUT_FORMAT = 'mp3'
 # Default playback speed multiplier
-DEFAULT_SPEED = float(os.getenv('DEFAULT_SPEED', '1.0'))
+DEFAULT_SPEED = float(os.getenv('DEFAULT_SPEED'))
+
 
 # Default output filename (used when no output path is specified)
 DEFAULT_OUTPUT_FILENAME = 'output_audiobook.mp3'
+
+# Directory for storing text versions of audiobooks
+TEXT_OUTPUT_DIR = os.getenv('TEXT_OUTPUT_DIR')
 
 # TTS API limits and settings
 MAX_TTS_CHUNK_SIZE = 4_000  # Maximum chunk size for TTS API (in characters)
@@ -64,8 +68,8 @@ Please follow these steps to extract and format the content:
 
 2. Extract and structure the content as follows:
    a. Title and Authors: Present the paper's title and list of authors but not their affiliations.
-   b. Abstract: Include the full abstract.
-   c. Main Sections: Extract the key content from the introduction, methodology, results, and conclusion. Omit any references, citations, and footnotes.
+   b. Abstract: Ignore the abstract.
+   c. Main Sections: Extract the key content from the introduction, related work, methodology, results, and conclusion (if there are any other sections, add them to the result too). Omit any references, citations, and footnotes.
    d. Mathematical Formulas: Convert equations and formulas into spoken language when possible. For complex formulas that cannot be easily verbalized, provide a brief description of their purpose or significance.
    e. Figures and Tables: Briefly describe important visual elements, focusing on their key insights and relevance to the overall research.
 
@@ -103,8 +107,8 @@ Please follow these steps to extract and format the content:
 
 2. Extract and structure the content as follows:
    a. Title and Authors: Present the paper's title and list of authors but not their affiliations.
-   b. Abstract: Include the full abstract.
-   c. Main Sections: Extract the key content from the introduction, methodology, results, and conclusion. Omit any references, citations, and footnotes.
+   b. Abstract: Ignore the abstract.
+   c. Main Sections: Extract the key content from the introduction, related work, methodology, results, and conclusion (if there are any other sections, add them to the result too). Omit any references, citations, and footnotes.
    d. Mathematical Formulas: Convert equations and formulas into spoken language when possible. For complex formulas that cannot be easily verbalized, provide a brief description of their purpose or significance.
    e. Figures and Tables: Briefly describe important visual elements, focusing on their key insights and relevance to the overall research.
 

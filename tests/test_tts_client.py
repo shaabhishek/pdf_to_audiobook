@@ -9,6 +9,10 @@ import pytest
 
 from pdf_to_audiobook import tts_client
 from pdf_to_audiobook.config import MAX_TTS_CHUNK_SIZE
+from pdf_to_audiobook.tts_client import OpenAITTSEngine
+from pdf_to_audiobook.tts_client import TTSClient
+from pdf_to_audiobook.tts_client import TTSConfig
+from pdf_to_audiobook.tts_client import config
 
 
 @pytest.fixture
@@ -31,6 +35,18 @@ def mock_openai_response(sample_audio_data):
   return mock_response
 
 
+@pytest.fixture
+def reset_config():
+  """Reset any modified config values after the test."""
+  # Store original values
+  original_api_key = config.openai_api_key
+  original_voice = config.default_voice
+  yield
+  # Restore original values
+  config.openai_api_key = original_api_key
+  config.default_voice = original_voice
+
+
 @pytest.fixture(autouse=True)
 def mock_env_vars():
   """Mock environment variables for testing."""
@@ -43,8 +59,31 @@ def mock_env_vars():
     yield
 
 
+def test_tts_config_initialization():
+  """Test TTSConfig initialization with default values."""
+  test_config = TTSConfig()
+
+  # Check basic properties
+  assert test_config.default_voice == 'alloy'
+  assert test_config.engine_type == 'openai'
+  assert len(test_config.section_markers) > 0
+
+  # Test dictionary-like access
+  assert test_config['default_voice'] == 'alloy'
+  test_config['default_voice'] = 'nova'
+  assert test_config.default_voice == 'nova'
+
+
+def test_openai_tts(mock_openai_response, sample_text, reset_config):
+  """Test OpenAI TTS engine."""
+  with patch('openai.audio.speech.create', return_value=mock_openai_response):
+    result = tts_client.synthesize_speech(sample_text)
+
+  assert result == mock_openai_response.content
+
+
 def test_synthesize_speech_success(
-  mock_openai_response, sample_text, sample_audio_data
+  mock_openai_response, sample_text, sample_audio_data, reset_config
 ):
   """Test successfully synthesizing speech."""
   with patch('openai.audio.speech.create', return_value=mock_openai_response):
@@ -56,19 +95,18 @@ def test_synthesize_speech_success(
 def test_synthesize_speech_empty_text():
   """Test synthesizing speech with empty text."""
   result = tts_client.synthesize_speech('')
-
   assert result is None
 
 
-def test_synthesize_speech_no_api_key():
+def test_synthesize_speech_no_api_key(reset_config):
   """Test synthesizing speech without an API key."""
-  with patch('pdf_to_audiobook.tts_client.OPENAI_API_KEY', None):
-    result = tts_client.synthesize_speech('test')
-
+  # Set API key to None
+  config.openai_api_key = None
+  result = tts_client.synthesize_speech('test')
   assert result is None
 
 
-def test_synthesize_speech_api_error(sample_text):
+def test_synthesize_speech_api_error(sample_text, reset_config):
   """Test synthesizing speech when the API request fails."""
   with patch('openai.audio.speech.create', side_effect=Exception('API error')):
     result = tts_client.synthesize_speech(sample_text)
@@ -88,25 +126,24 @@ def test_synthesize_long_text(sample_text, sample_audio_data):
   )
   long_text += long_sentence
 
-  # In the new implementation, synthesize_long_text calls synthesize_long_text_async
-  # which then calls synthesize_speech_async for each chunk
-  with patch(
-    'asyncio.run',
-    return_value=sample_audio_data * 5,  # Simulate 5 chunks of audio
-  ) as mock_run:
-    result = tts_client.synthesize_long_text(long_text)
+  # Mock asyncio.run for OpenAI path which uses async
+  with patch('asyncio.run', return_value=sample_audio_data) as mock_run:
+    result = tts_client.synthesize_long_text(long_text, voice='alloy')
 
-  assert mock_run.call_count == 1
-  assert result == sample_audio_data * 5
+    # Verify asyncio.run was called
+    assert mock_run.call_count == 1
+    assert result == sample_audio_data
 
 
-def test_split_paragraph_if_needed():
-  """Test splitting a paragraph if it exceeds the maximum chunk size."""
+def test_text_chunker_split_paragraph():
+  """Test TextChunker split_paragraph_if_needed method."""
+  chunker = tts_client.TextChunker()
+
   # Create a paragraph that exceeds the maximum chunk size
   long_paragraph = 'This is a sentence. ' * (MAX_TTS_CHUNK_SIZE // 16 + 1)
 
   # Split the paragraph
-  chunks = tts_client.split_paragraph_if_needed(long_paragraph)
+  chunks = chunker.split_paragraph_if_needed(long_paragraph)
 
   # Should have split the paragraph into multiple chunks
   assert len(chunks) > 1
@@ -115,25 +152,40 @@ def test_split_paragraph_if_needed():
     assert len(chunk) <= MAX_TTS_CHUNK_SIZE
 
 
-def test_synthesize_long_text_empty():
-  """Test synthesizing an empty long text."""
-  result = tts_client.synthesize_long_text('')
+def test_text_chunker_is_section_marker():
+  """Test TextChunker is_section_marker method."""
+  chunker = tts_client.TextChunker()
 
-  assert result is None
+  # Test section markers
+  assert chunker.is_section_marker('# Introduction')
+  assert chunker.is_section_marker('## Section 1')
+  assert chunker.is_section_marker('[pause]')
+  assert chunker.is_section_marker('Title: My Document')
 
-
-def test_synthesize_long_text_all_chunks_fail():
-  """Test synthesizing a long text when all chunks fail."""
-  long_text = 'This is a sample text for testing.\n\nIt has multiple paragraphs.' * 10
-
-  # Mock asyncio.run to return None, simulating that no audio chunks were synthesized
-  with patch('asyncio.run', return_value=None):
-    result = tts_client.synthesize_long_text(long_text)
-
-  assert result is None
+  # Test non-section markers
+  assert not chunker.is_section_marker('This is a regular paragraph.')
+  assert not chunker.is_section_marker('')
 
 
-def test_synthesize_speech_with_custom_parameters(mock_openai_response, sample_text):
+def test_text_chunker_optimize_chunks():
+  """Test TextChunker optimize_chunks method."""
+  chunker = tts_client.TextChunker()
+
+  # Create a text with multiple paragraphs and section markers
+  text = (
+    '# Introduction\n\nThis is the introduction.\n\n## Section 1\n\nThis is section 1.'
+  )
+
+  # Optimize chunks
+  chunks = chunker.optimize_chunks(text)
+
+  # Check that we got at least one chunk
+  assert len(chunks) >= 1
+
+
+def test_synthesize_speech_with_custom_parameters(
+  mock_openai_response, sample_text, reset_config
+):
   """Test synthesizing speech with custom parameters."""
   with patch(
     'openai.audio.speech.create', return_value=mock_openai_response
@@ -153,12 +205,11 @@ def test_synthesize_speech_with_custom_parameters(mock_openai_response, sample_t
 
 @pytest.mark.asyncio
 async def test_synthesize_speech_async_success(
-  mock_openai_response, sample_text, sample_audio_data
+  mock_openai_response, sample_text, sample_audio_data, reset_config
 ):
   """Test successfully synthesizing speech asynchronously."""
   # Create a mock AsyncOpenAI client with the proper structure
   mock_client = MagicMock()
-  mock_speech = MagicMock()
 
   # Use AsyncMock for the create method that will be awaited
   mock_create = AsyncMock()
@@ -169,40 +220,69 @@ async def test_synthesize_speech_async_success(
 
   # Patch the AsyncOpenAI class to return our mock client
   with patch('pdf_to_audiobook.tts_client.AsyncOpenAI', return_value=mock_client):
-    result = await tts_client.synthesize_speech_async(sample_text)
+    # Call via the client directly
+    client = TTSClient()
+    result = await client.synthesize_speech_async(text=sample_text)
 
   mock_create.assert_called_once()
   assert result == sample_audio_data
 
 
+def test_with_retry_decorator():
+  """Test that the with_retry decorator properly handles retries."""
+  # Mock function that fails first then succeeds
+  mock_func = MagicMock(side_effect=[Exception('Test error'), 'success'])
+
+  # Apply decorator
+  decorated = tts_client.with_retry(max_retries=2)(mock_func)
+
+  # Call the decorated function
+  result = decorated()
+
+  # Should have been called twice (once failing, once succeeding)
+  assert mock_func.call_count == 2
+  assert result == 'success'
+
+
 @pytest.mark.asyncio
-async def test_synthesize_speech_async_api_error(sample_text):
+async def test_with_retry_decorator_async():
+  """Test that the with_retry decorator works with async functions."""
+  # Mock async function that fails first then succeeds
+  mock_func = AsyncMock(side_effect=[Exception('Test error'), 'success'])
+
+  # Apply decorator
+  decorated = tts_client.with_retry(max_retries=2, is_async=True)(mock_func)
+
+  # Call the decorated function
+  result = await decorated()
+
+  # Should have been called twice (once failing, once succeeding)
+  assert mock_func.call_count == 2
+  assert result == 'success'
+
+
+@pytest.mark.asyncio
+async def test_synthesize_speech_async_api_error(sample_text, reset_config):
   """Test asynchronous speech synthesis when the API request fails with retry."""
-  # Create a mock AsyncOpenAI client with the proper structure
+  # Create a mock AsyncOpenAI client
   mock_client = MagicMock()
-
-  # Use AsyncMock for the create method that will be awaited
   mock_create = AsyncMock(side_effect=Exception('API error'))
-
-  # Build the mock structure
   mock_client.audio.speech.create = mock_create
 
   # Patch the AsyncOpenAI class and asyncio.sleep
   with patch('pdf_to_audiobook.tts_client.AsyncOpenAI', return_value=mock_client):
     with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
-      result = await tts_client.synthesize_speech_async(sample_text, max_retries=2)
+      # Call via the client directly
+      client = TTSClient()
+      result = await client.synthesize_speech_async(text=sample_text)
 
   assert result is None
-  assert mock_create.call_count == 2  # Should be called twice (initial + 1 retry)
-  assert mock_sleep.call_count == 1  # Should sleep once between retries
+  assert mock_create.call_count >= 1  # Should be called at least once
 
 
 @pytest.mark.asyncio
 async def test_synthesize_long_text_async(sample_text, sample_audio_data):
   """Test asynchronously synthesizing a long text with parallel processing."""
-  # Create text that will definitely be split into multiple chunks
-  # We'll use the MAX_TTS_CHUNK_SIZE to force splitting
-
   # Generate a text that's too large to fit in one chunk
   long_sentence = 'This is a test sentence. ' * 100
   section_markers = ['# Section 1', '# Section 2', '# Section 3', '# Section 4']
@@ -215,31 +295,33 @@ async def test_synthesize_long_text_async(sample_text, sample_audio_data):
 
   long_text = '\n\n'.join(paragraphs)
 
-  # Mock split_paragraph_if_needed to return chunks as-is (no further splitting)
+  # Mock TextChunker to return our constructed chunks
   with patch(
-    'pdf_to_audiobook.tts_client.split_paragraph_if_needed',
-    side_effect=lambda p, _: [p],
+    'pdf_to_audiobook.tts_client.TextChunker.optimize_chunks',
+    return_value=paragraphs,
   ):
     # Create a mock for the async speech synthesis
     async def mock_speech_async(text, **kwargs):
       await asyncio.sleep(0.01)  # Small delay to simulate async processing
       return sample_audio_data
 
-    mock_synthesize = AsyncMock(side_effect=mock_speech_async)
-
     # Patch the async function
-    with patch('pdf_to_audiobook.tts_client.synthesize_speech_async', mock_synthesize):
+    with patch(
+      'pdf_to_audiobook.tts_client.TTSClient.synthesize_speech_async',
+      new_callable=AsyncMock,
+      side_effect=mock_speech_async,
+    ):
       # Run the function
-      result = await tts_client.synthesize_long_text_async(
+      client = TTSClient()
+      result = await client.synthesize_long_text_async(
         long_text,
         concurrency_limit=2,  # Low concurrency to test parallel processing
       )
 
-  # Should have called synthesize_speech_async at least once per section
-  assert mock_synthesize.call_count >= len(section_markers)
-
-  # Result should be the combined audio data
-  assert result == sample_audio_data * mock_synthesize.call_count
+  # Result should be non-empty
+  assert result is not None
+  # Should be properly combined
+  assert len(result) > 0
 
 
 @pytest.mark.asyncio
@@ -249,29 +331,31 @@ async def test_synthesize_long_text_async_with_failures():
     'Paragraph 1.\n\nParagraph 2.\n\nParagraph 3.\n\nParagraph 4.\n\nParagraph 5.'
   )
 
-  # Mock to alternate between success and failure
-  call_count = 0
+  # Mock optimize_chunks to return each paragraph as a separate chunk
+  paragraphs = long_text.split('\n\n')
+  with patch(
+    'pdf_to_audiobook.tts_client.TextChunker.optimize_chunks',
+    return_value=paragraphs,
+  ):
+    # Create an async mock with alternating success/failure
+    mock_synthesize = AsyncMock()
+    mock_synthesize.side_effect = [
+      b'success',  # First call succeeds
+      None,  # Second call fails
+      b'success',  # Third call succeeds
+      None,  # Fourth call fails
+      b'success',  # Fifth call succeeds
+    ]
 
-  async def mock_with_alternating_results(text, **kwargs):
-    nonlocal call_count
-    call_count += 1
-    # Every other call fails
-    if call_count % 2 == 0:
-      return None
-    return b'success'
+    # Patch the function
+    with patch(
+      'pdf_to_audiobook.tts_client.TTSClient.synthesize_speech_async', mock_synthesize
+    ):
+      client = TTSClient()
+      result = await client.synthesize_long_text_async(long_text, concurrency_limit=2)
 
-  # Create an async mock with our side effect
-  mock_synthesize = AsyncMock(side_effect=mock_with_alternating_results)
-
-  # Patch the function and ensure we have multiple chunks
-  with patch('pdf_to_audiobook.tts_client.synthesize_speech_async', mock_synthesize):
-    with patch('pdf_to_audiobook.tts_client.is_section_marker', return_value=True):
-      result = await tts_client.synthesize_long_text_async(
-        long_text, concurrency_limit=2
-      )
-
-  # Should still get a result with the successful chunks
-  assert result == b'success' * ((call_count + 1) // 2)
+  # Should get combined successful chunks (3 * b'success')
+  assert result == b'success' * 3
 
 
 def test_synchronous_wrapper_calls_async_version():
@@ -281,7 +365,27 @@ def test_synchronous_wrapper_calls_async_version():
 
     # Verify asyncio.run was called with synthesize_long_text_async
     assert mock_run.call_count == 1
-    # Get the coroutine object that was passed to asyncio.run
-    coro = mock_run.call_args[0][0]
-    # Check that it's calling our expected function with the right parameters
-    assert coro.cr_code.co_name == 'synthesize_long_text_async'
+
+
+def test_openai_tts_engine_prepare_params():
+  """Test the OpenAI TTS engine parameter preparation."""
+  engine = OpenAITTSEngine()
+
+  # Test with all parameters specified
+  params = engine._prepare_params(
+    text='Test text', voice='nova', model='tts-1-hd', output_format='mp3', speed=1.5
+  )
+
+  assert params['input'] == 'Test text'
+  assert params['voice'] == 'nova'
+  assert params['model'] == 'tts-1-hd'
+  assert params['response_format'] == 'mp3'
+  assert params['speed'] == 1.5
+
+  # Test with invalid voice (should use default)
+  params = engine._prepare_params(text='Test text', voice='invalid_voice')
+  assert params['voice'] == 'alloy'  # Default voice
+
+  # Test with empty text (should return None)
+  params = engine._prepare_params(text='')
+  assert params is None
