@@ -20,8 +20,11 @@ from typing import TypeVar
 
 import openai
 from openai import AsyncOpenAI
+from openai import OpenAI
 
 from pdf_to_audiobook.logging_config import configure_logging
+
+openai_version = getattr(openai, '__version__', 'unknown')
 
 # Type definitions
 T = TypeVar('T')
@@ -30,6 +33,7 @@ SyncFunc = Callable[..., Any]
 
 # Configure logging
 logger = configure_logging(__name__)
+logger.info(f'Using OpenAI version: {openai_version}')
 
 
 @dataclass
@@ -284,7 +288,7 @@ class OpenAITTSEngine(TTSEngine):
   def __init__(self, config: TTSConfig = config):
     """Initialize the OpenAI TTS engine."""
     super().__init__(config)
-    openai.api_key = self.config.openai_api_key
+    # Don't set a global API key here, create client instances for each request
 
   def _validate_voice(self, voice: str) -> str:
     """Validate the requested voice and return a compatible voice."""
@@ -314,7 +318,7 @@ class OpenAITTSEngine(TTSEngine):
 
     # Use provided values or defaults from config
     voice = self._validate_voice(voice or self.config.default_voice)
-    model = model or self.config.tts_model
+    logger.info(f'Using model: {model} (original input was: {self.config.tts_model!r})')
     output_format = output_format or self.config.default_output_format
     speed = speed or self.config.default_speed
 
@@ -341,10 +345,18 @@ class OpenAITTSEngine(TTSEngine):
       return None
 
     logger.info(
-      f'Converting text to speech using OpenAI TTS with voice: {params["voice"]}'
+      f'Converting text to speech using OpenAI TTS with voice: {params["voice"]}, model: {params["model"]}, params: {params}'
     )
-    response = openai.audio.speech.create(**params)
-    return response.content
+
+    # Create a fresh client for each request with explicit API key
+    client = OpenAI(api_key=self.config.openai_api_key)
+
+    try:
+      response = client.audio.speech.create(**params)
+      return response.content
+    except Exception as e:
+      logger.error(f'Error in synthesize: {type(e).__name__}: {str(e)}')
+      raise
 
   @with_retry(is_async=True)
   async def synthesize_async(self, text: str, **kwargs) -> Optional[bytes]:
@@ -360,20 +372,33 @@ class OpenAITTSEngine(TTSEngine):
     if not params:
       return None
 
-    logger.info('Converting text to speech asynchronously (OpenAI TTS)')
+    logger.info(
+      f'Converting text to speech asynchronously (OpenAI TTS) with params: {params}'
+    )
+    # Create a fresh client for each request with explicit API key
     client = AsyncOpenAI(api_key=self.config.openai_api_key)
-    response = await client.audio.speech.create(**params)
-    return response.content
+
+    try:
+      response = await client.audio.speech.create(**params)
+      return response.content
+    except Exception as e:
+      logger.error(f'Error in synthesize_async: {type(e).__name__}: {str(e)}')
+      raise
 
 
 class TTSClient:
   """Client for text-to-speech synthesis."""
 
   def __init__(self, config: TTSConfig = config):
-    """Initialize the TTS client."""
+    """Initialize the TTS client with config and engine.
+
+    Args:
+        config: Configuration for the TTS client.
+    """
     self.config = config
+    logger.info(f'Initializing TTSClient with TTS model: {self.config.tts_model!r}')
     self.text_chunker = TextChunker(config)
-    self._engine = OpenAITTSEngine(config)  # Default to OpenAI engine
+    self.engine = OpenAITTSEngine(config)
 
   def synthesize_speech(self, text: str, **kwargs) -> Optional[bytes]:
     """Convert text to speech using the configured TTS engine."""
@@ -381,7 +406,7 @@ class TTSClient:
       logger.error('No text provided for speech synthesis')
       return None
 
-    return self._engine.synthesize(text=text, **kwargs)
+    return self.engine.synthesize(text=text, **kwargs)
 
   async def synthesize_speech_async(self, text: str, **kwargs) -> Optional[bytes]:
     """Convert text to speech asynchronously."""
@@ -389,7 +414,7 @@ class TTSClient:
       logger.error('No text provided for speech synthesis')
       return None
 
-    return await self._engine.synthesize_async(text=text, **kwargs)
+    return await self.engine.synthesize_async(text=text, **kwargs)
 
   async def synthesize_long_text_async(
     self,
@@ -440,21 +465,23 @@ class TTSClient:
     return asyncio.run(self.synthesize_long_text_async(text=text, **kwargs))
 
 
-# Create a global TTS client instance
-_client = TTSClient()
-
-
 # Simple interface functions that use the global client
 def synthesize_speech(text: str, **kwargs) -> Optional[bytes]:
   """Convert text to speech."""
-  return _client.synthesize_speech(text=text, **kwargs)
+  # Create a fresh client for each call
+  client = TTSClient()
+  return client.synthesize_speech(text=text, **kwargs)
 
 
 async def synthesize_speech_async(text: str, **kwargs) -> Optional[bytes]:
   """Convert text to speech asynchronously."""
-  return await _client.synthesize_speech_async(text=text, **kwargs)
+  # Create a fresh client for each call
+  client = TTSClient()
+  return await client.synthesize_speech_async(text=text, **kwargs)
 
 
 def synthesize_long_text(text: str, **kwargs) -> Optional[bytes]:
   """Convert long text to speech by breaking it into chunks."""
-  return _client.synthesize_long_text(text=text, **kwargs)
+  # Create a fresh client for each call
+  client = TTSClient()
+  return client.synthesize_long_text(text=text, **kwargs)

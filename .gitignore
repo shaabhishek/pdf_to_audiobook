@@ -32,6 +32,7 @@ build/
 .vscode/
 *.swp
 *.swo
+uv.lock
 
 # Audio output files
 *.mp3
@@ -40,3 +41,9 @@ build/
 
 # Temp directories
 .temp_audio/
+
+# Gradio cache
+.gradio/
+
+# Text output directory
+text_outputs/

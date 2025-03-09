@@ -13,11 +13,14 @@ from typing import Dict
 from typing import NamedTuple
 from typing import Optional
 
+from pdf_to_audiobook.config import AI_MODEL_CHOICES
 from pdf_to_audiobook.config import DEFAULT_PDF_AI_MODEL
 from pdf_to_audiobook.config import DEFAULT_SPEED
 from pdf_to_audiobook.config import DEFAULT_VOICE
 from pdf_to_audiobook.config import TEXT_OUTPUT_DIR
 from pdf_to_audiobook.config import TTS_MODEL
+from pdf_to_audiobook.config import TTS_MODEL_CHOICES
+from pdf_to_audiobook.config import TTS_VOICE_CHOICES
 from pdf_to_audiobook.file_utils import ensure_directory_exists
 from pdf_to_audiobook.file_utils import save_binary_to_file
 from pdf_to_audiobook.file_utils import save_text_to_file
@@ -153,7 +156,8 @@ def convert_text_to_audio(
   """
   # Convert text to speech
   logger.info(
-    f'Converting text to speech using OpenAI TTS with voice: {voice}, model: {tts_model}'
+    f'Converting text to speech using OpenAI TTS with voice: {voice}, '
+    f'model: {tts_model}'
   )
   audio_data = synthesize_long_text(
     text,
@@ -245,13 +249,13 @@ def parse_arguments() -> Dict[str, Any]:
   )
   parser.add_argument(
     '--voice',
-    choices=['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'],
+    choices=TTS_VOICE_CHOICES,
     default=DEFAULT_VOICE,
     help='Voice to use for TTS (default: alloy)',
   )
   parser.add_argument(
     '--tts-model',
-    choices=['tts-1', 'tts-1-hd'],
+    choices=TTS_MODEL_CHOICES,
     default=TTS_MODEL,
     help='Model to use for TTS (default: tts-1)',
   )
@@ -266,7 +270,7 @@ def parse_arguments() -> Dict[str, Any]:
   )
   parser.add_argument(
     '--ai-model',
-    choices=['gemini', 'openai'],
+    choices=AI_MODEL_CHOICES,
     default=DEFAULT_PDF_AI_MODEL,
     help='AI model to use for PDF processing (default: %(default)s)',
   )

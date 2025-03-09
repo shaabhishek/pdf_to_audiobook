@@ -22,13 +22,16 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
 
 # Default AI model to use for PDF processing (either 'gemini' or 'openai')
-DEFAULT_PDF_AI_MODEL = os.getenv('DEFAULT_PDF_AI_MODEL', 'gemini')
+AI_MODEL_CHOICES = ['openai', 'gemini']
+DEFAULT_PDF_AI_MODEL = os.getenv('DEFAULT_PDF_AI_MODEL')
 
 # OpenAI TTS API configuration
 # No separate API key needed for OpenAI TTS - uses the same OPENAI_API_KEY
 # Possible values: tts-1, tts-1-hd
+TTS_MODEL_CHOICES = ['tts-1', 'tts-1-hd']
 TTS_MODEL = os.getenv('TTS_MODEL')
 # OpenAI voices: alloy, echo, fable, onyx, nova, shimmer
+TTS_VOICE_CHOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
 DEFAULT_VOICE = os.getenv('DEFAULT_VOICE')
 DEFAULT_OUTPUT_FORMAT = 'mp3'
 # Default playback speed multiplier

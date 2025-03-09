@@ -14,6 +14,7 @@ The PDF to Audiobook Converter is designed to transform academic research papers
 - **Custom Output Directory:** Use the `--output-folder` option to specify a directory for saving both audio and text files.
 - **Centralized Logging:** Consistent logging across modules to aid in debugging and monitoring.
 - **Flexible Command-Line Interface:** Multiple options for configuring the conversion process.
+- **Web-based Interface:** A browser-based GUI for easy interaction without command-line knowledge.
 - **Comprehensive Testing:** Extensive tests ensure reliability across a broad range of use cases.
 
 ## Installation
@@ -27,7 +28,23 @@ This project uses `uv` for dependency management. Please ensure you have `uv` in
 uv sync
 ```
 
+### Web GUI Requirements
+
+The web-based GUI uses Gradio, which can be installed with:
+
+```bash
+uv pip install 'pdf-to-audiobook[web]'
+```
+
+Or directly:
+
+```bash
+uv pip install gradio
+```
+
 ## Usage
+
+### Command-Line Interface
 
 Run the converter via the command line:
 
@@ -35,7 +52,7 @@ Run the converter via the command line:
 python -m pdf_to_audiobook.main [pdf_path] [options]
 ```
 
-### Command-Line Options
+#### Command-Line Options
 
 - `pdf_path`: Path to the PDF file.
 - `--output-folder, -o`: Specifies the folder where generated files (audio and text) will be saved. If not provided, files are saved in their default locations.
@@ -59,6 +76,31 @@ To convert a PDF using OpenAI TTS:
 
 ```bash
 python -m pdf_to_audiobook.main research_paper.pdf --output-folder output --title 'Custom Paper Title' --tts-mode openai --voice nova --model tts-1 --speed 1.0
+```
+
+### Web-based Interface
+
+For a user-friendly experience, you can use the web-based GUI:
+
+```bash
+python -m pdf_to_audiobook.web_gui
+```
+
+This will start a local web server and open a browser window with the interface. The web GUI provides easy access to all features:
+
+- PDF file upload via drag-and-drop or file browser
+- Output folder and custom title options
+- Voice, TTS Model, and Speed settings
+- Advanced settings like Minimum Chunk Size and AI Model selection
+- Status updates and progress tracking
+- Audio playback directly in the browser
+
+Once the interface loads, simply upload your PDF, configure your preferences, and click the "Convert PDF to Audiobook" button to start the conversion.
+
+For quick access, you can also use:
+
+```bash
+python run_web_gui.py
 ```
 
 ## TTS Engines
@@ -105,6 +147,15 @@ python -m pytest -v
 ## Code Structure
 
 - **pdf_to_audiobook/**: Main package containing modules for PDF reading, TTS conversion, logging, and utility functions.
+  - **main.py**: Command-line interface and core conversion logic.
+  - **web_gui.py**: Web-based graphical user interface using Gradio.
+  - **tts_client.py**: Client for text-to-speech conversion.
+  - **pdf_reader.py**: Functions to extract text from PDFs.
+  - **config.py**: Configuration settings.
+  - **file_utils.py**: Utilities for file operations.
+  - **utils.py**: General utility functions.
+  - **logging_config.py**: Logging configuration.
+  - **validation.py**: Input validation functions.
 - **tests/**: Contains unit tests using `pytest` to ensure the reliability of each module.
 
 ## Contributing
