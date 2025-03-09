@@ -9,4 +9,4 @@ and a graphical user interface.
 __version__ = '0.1.0'
 
 # Import main modules for easy access
-from pdf_to_audiobook.main import convert_pdf_to_audiobook
+from pdf_to_audiobook.main import convert_pdf_to_audiobook  # noqa: F401

@@ -303,7 +303,7 @@ class OpenAITTSEngine(TTSEngine):
     self,
     text: str,
     voice: Optional[str] = None,
-    model: Optional[str] = None,
+    tts_model: Optional[str] = None,
     output_format: Optional[str] = None,
     speed: Optional[float] = None,
   ) -> Optional[Dict[str, Any]]:
@@ -318,12 +318,14 @@ class OpenAITTSEngine(TTSEngine):
 
     # Use provided values or defaults from config
     voice = self._validate_voice(voice or self.config.default_voice)
-    logger.info(f'Using model: {model} (original input was: {self.config.tts_model!r})')
+    logger.info(
+      f'Using model: {tts_model} (original input was: {self.config.tts_model!r})'
+    )
     output_format = output_format or self.config.default_output_format
     speed = speed or self.config.default_speed
 
     return {
-      'model': model,
+      'model': tts_model,
       'voice': voice,
       'input': text,
       'speed': speed,
@@ -336,7 +338,7 @@ class OpenAITTSEngine(TTSEngine):
     params = self._prepare_params(
       text,
       voice=kwargs.get('voice'),
-      model=kwargs.get('model'),
+      tts_model=kwargs.get('tts_model'),
       output_format=kwargs.get('output_format'),
       speed=kwargs.get('speed'),
     )
@@ -345,7 +347,7 @@ class OpenAITTSEngine(TTSEngine):
       return None
 
     logger.info(
-      f'Converting text to speech using OpenAI TTS with voice: {params["voice"]}, model: {params["model"]}, params: {params}'
+      f'Converting text to speech using OpenAI TTS with voice: {params["voice"]}, model: {params["tts_model"]}, params: {params}'
     )
 
     # Create a fresh client for each request with explicit API key
@@ -364,7 +366,7 @@ class OpenAITTSEngine(TTSEngine):
     params = self._prepare_params(
       text,
       voice=kwargs.get('voice'),
-      model=kwargs.get('model'),
+      tts_model=kwargs.get('tts_model'),
       output_format=kwargs.get('output_format'),
       speed=kwargs.get('speed'),
     )
