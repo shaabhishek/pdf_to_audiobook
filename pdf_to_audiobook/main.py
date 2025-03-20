@@ -217,6 +217,7 @@ def convert_pdf_to_audiobook(
 
   # Extract text from PDF and save as markdown
   extracted_text = process_pdf(pdf_path, output_paths, ai_model)
+  logger.info(f'Extracted text: {extracted_text}')
   if not extracted_text:
     return False
 

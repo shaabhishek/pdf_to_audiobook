@@ -385,12 +385,6 @@ def read_pdf(
     logger.error(f'Failed to extract raw text from PDF: {file_path}')
     return None
 
-  # Count paragraphs in raw text
-  raw_paragraphs = raw_text.split('\n\n')
-  logger.info(
-    f'Successfully extracted raw text ({len(raw_text)} characters, {len(raw_paragraphs)} paragraphs)'
-  )
-
   # Sample the raw text to understand its structure
   logger.info(f'Raw text sample (first 200 chars): {raw_text[:200]}')
 
