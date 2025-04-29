@@ -97,19 +97,28 @@ CONCURRENCY_LIMIT = 5  # Maximum number of concurrent API calls
 
 
 OPENAI_EXTRACTION_PROMPT = """
-Imagine you are the original author of this research paper. Your task is to present an in-depth, audiobook-style explanation of your work that leaves your audience—comprising machine learning Ph.Ds and other experts—a complete understanding of every facet of your research. 
+You are the original author of this research paper. Produce an audiobook-ready explanation in three layers:
 
-Structure your explanation in the following layers:
-	1.	Layer 1 – High-Level Overview:
-Provide a concise, broad summary of the research. Describe the primary idea, motivation, and significance of the paper in a way that is accessible to any technically inclined listener.
-	2.	Layer 2 – Intermediate Summary:
-Delve deeper by explaining the core methodologies, key insights, and main contributions of the research. Tailor this explanation to a machine learning Ph.D.-level audience, ensuring that you articulate the underlying concepts and rationale clearly.
-	3.	Layer 3 – Comprehensive Technical Walkthrough:
-Deliver a fully detailed, step-by-step technical description of the problem, the proposed solution, experimental setup, results, and implications. Do not skip any detail—even the minor ones—as if you were teaching the content in an extended, narrated lecture.
+### Layer 1 – High-Level Overview (≤ 300 words)
+Provide a concise summary of the primary idea, motivation, and significance of the paper.
 
-Your final narrative should flow naturally as an engaging audiobook lecture, with a clear, conversational tone. By the end, your audience should feel fully equipped to explain the research to others, having understood both the big picture and all technical intricacies.
+### Layer 2 – Intermediate Summary (≤ 1 000 words)
+Explain the core methodologies, key insights, and main contributions for a machine learning Ph.D.–level audience.
 
-Keep the tone formal and academic. Don't use any casual language or phrases unless they are part of the paper.
+### Layer 3 – Comprehensive Technical Walkthrough (≤ 4 000 words)
+Deliver a detailed, step-by-step technical description of the problem, proposed solution, experimental setup, results, and implications.
+
+Formatting rules:
+- Use the exact Markdown headers shown above.
+- Insert `[pause]` between major sections.
+- Expand each acronym on first use (e.g., “Reinforcement Learning (RL)”), then use the acronym thereafter.
+- Describe mathematical equations in spoken language; if too complex, explain their purpose or significance.
+- Omit reference lists; mention only key prior work titles inline when crucial.
+- Maintain a formal, academic tone; do not include content beyond what is in the paper.
+- Structure the output as a single Markdown document.
+
+Deterministic style:
+Write clearly and concisely without creative or speculative content. Stick strictly to the paper text.
 
 The paper content is as follows:
 {RESEARCH_PAPER_CONTENT}
@@ -154,24 +163,7 @@ The paper content is as follows:
 # Aim for a total length of 15000-20000 characters.
 # """  # noqa: E501
 
-GEMINI_EXTRACTION_PROMPT = """
-Imagine you are the original author of this research paper. Your task is to present an in-depth, audiobook-style explanation of your work that leaves your audience—comprising machine learning Ph.Ds and other experts—a complete understanding of every facet of your research. 
-
-Structure your explanation in the following layers:
-	1.	Layer 1 – High-Level Overview:
-Provide a concise, broad summary of the research. Describe the primary idea, motivation, and significance of the paper in a way that is accessible to any technically inclined listener.
-	2.	Layer 2 – Intermediate Summary:
-Delve deeper by explaining the core methodologies, key insights, and main contributions of the research. Tailor this explanation to a machine learning Ph.D.-level audience, ensuring that you articulate the underlying concepts and rationale clearly.
-	3.	Layer 3 – Comprehensive Technical Walkthrough:
-Deliver a fully detailed, step-by-step technical description of the problem, the proposed solution, experimental setup, results, and implications. Do not skip any detail—even the minor ones—as if you were teaching the content in an extended, narrated lecture.
-
-Your final narrative should flow naturally as an engaging audiobook lecture, with a clear, conversational tone. By the end, your audience should feel fully equipped to explain the research to others, having understood both the big picture and all technical intricacies.
-
-Keep the tone formal and academic. Don't use any casual language or phrases unless they are part of the paper.
-
-The paper content is as follows:
-{RESEARCH_PAPER_CONTENT}
-"""
+GEMINI_EXTRACTION_PROMPT = OPENAI_EXTRACTION_PROMPT
 
 # Logging configuration
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
