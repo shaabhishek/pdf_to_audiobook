@@ -272,7 +272,13 @@ def main():
 
   # Launch the interface with allowed paths
   logger.info(f'Launching web interface with allowed paths: {allowed_paths}')
-  interface.launch(share=True, allowed_paths=allowed_paths)
+  port = int(os.getenv('GRADIO_SERVER_PORT', '7860'))
+  interface.launch(
+    server_name=os.getenv('GRADIO_SERVER_NAME', '0.0.0.0'),
+    server_port=port,
+    share=False,
+    allowed_paths=allowed_paths,
+  )
   return 0
 
 
