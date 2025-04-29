@@ -1,1 +1,1 @@
-web: python -m pdf_to_audiobook.web_gui
+web: python run_web_gui.py
