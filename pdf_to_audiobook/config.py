@@ -13,9 +13,9 @@ load_dotenv()
 # OpenAI API configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 # OpenAI model for PDF text extraction
-# Note: o3-mini doesn't support temperature parameter and has some limitations
+# Note: o4-mini doesn't support temperature parameter and has some limitations
 # compared to more powerful models like gpt-3.5-turbo or gpt-4
-OPENAI_PDF_MODEL = os.getenv('OPENAI_PDF_MODEL', 'o3-mini')
+OPENAI_PDF_MODEL = os.getenv('OPENAI_PDF_MODEL', 'o4-mini')
 
 # Google Gemini API configuration (used for PDF text extraction)
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')

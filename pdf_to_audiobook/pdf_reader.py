@@ -129,10 +129,10 @@ def process_with_openai_with_retry(
           {'role': 'user', 'content': prompt},
         ],
       }
-      if OPENAI_PDF_MODEL == 'o3-mini':
+      if OPENAI_PDF_MODEL == 'o4-mini':
         params['reasoning_effort'] = 'medium'
-      # Only add temperature for models that support it (not o3-mini)
-      if 'o3-mini' not in OPENAI_PDF_MODEL:
+      # Only add temperature for models that support it (not o4-mini)
+      if 'o4-mini' not in OPENAI_PDF_MODEL:
         params['temperature'] = 0.2  # Lower temperature for more deterministic results
 
       # Make API call with appropriate parameters
